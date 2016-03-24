@@ -1,0 +1,139 @@
+---
+- hosts: all
+  gather_facts: no
+  become: yes
+  become_method: sudo
+  become_user: root
+  tasks:
+  - name: Get postgres repo
+    yum: name=https://download.postgresql.org/pub/repos/yum/9.5/redhat/rhel-6-x86_64/pgdg-centos95-9.5-2.noarch.rpm state=present
+
+  - name: Install postgres
+    yum: name=postgresql95-server state=present
+
+  - name: Initialse postgres
+    shell: service postgresql-9.5 initdb
+
+  - name: allow password authentication in postgres
+    copy: src=files/pg_hba.conf dest=/var/lib/pgsql/9.5/data/pg_hba.conf owner=postgres group=postgres mode=0600
+    notify:
+    - restart postgres
+
+  - name: start postgres service
+    service: name=postgresql-9.5  state=started enabled=yes
+
+
+  - name: create razor user
+    shell: psql --command '\du' | awk '{print $1}' | grep 'razor' || psql --command "create USER razor WITH PASSWORD 'RazoR';"
+    become_user: postgres
+
+  - name: create db for razor
+    shell: psql --command '\l' | awk '{print $1}'  | grep '{{ item }}' || createdb -O razor {{ item }}
+    become_user: postgres
+    with_items:
+      - razor_prd
+      - razor_dev
+      - razor_test
+
+  - name: Install razor-server repo
+    yum: name=http://yum.puppetlabs.com/puppetlabs-release-el-6.noarch.rpm state=present
+
+  - name: Install razor razor-server
+    yum: name=razor-server state=latest
+
+  - name: Create razor config file 
+    copy: src=files/config.yaml dest=/etc/razor/config.yaml owner=root group=root  mode=0644
+    notify:
+    - restart razor-server
+
+  - name: load the Razor database schema into your PostgreSQL database
+    shell: razor-admin -e production migrate-database
+
+  - name: start razor razor-server
+    service: name=razor-server state=started enabled=yes
+
+  - name: wait for 1 minute allow razor to bootstarp 
+    pause: minutes=1
+
+  - name: verify whether razor-server is listning through API
+    shell: curl -L http://{{ inventory_hostname }}:8150/api 
+    register: webpage
+
+  - name: Chek if url is working correctly 
+    action: fail
+    when: "'create-policy' not in webpage.stdout"
+
+  - name: Get micro kernel
+    get_url: url=http://links.puppetlabs.com/razor-microkernel-latest.tar dest=/tmp/razor-microkernel-latest.tar 
+
+  - name: Extract the micro to /var/lib/razor/repo-store/
+    unarchive: src=/tmp/razor-microkernel-latest.tar  dest=/var/lib/razor/repo-store/ owner=razor group=razor  copy=no
+
+  - name: Install rubygems for razor-client
+    yum: name=rubygems state=latest
+
+  - name: Install razor razor-client
+    gem: name=razor-client state=latest user_install=no
+
+  - name: Install dnsmasq for DHCP and TFTP
+    yum: name=dnsmasq state=latest 
+
+  - name: Create directory for TFTP
+    file: path=/var/lib/tftpboot state=directory owner=razor group=razor mode=0755
+
+  - name: Get undionly.kpxe file for tftpboot
+    get_url: url=http://boot.ipxe.org/undionly.kpxe dest=/var/lib/tftpboot/undionly.kpxe owner=razor group=razor mode=0744
+
+  - name: Get bootstrap.ipxe file for TFTP
+    get_url: url=http://{{ inventory_hostname }}:8150/api/microkernel/bootstrap?nic_max=10  dest=/var/lib/tftpboot/bootstrap.ipxe owner=razor group=razor mode=0744
+
+  - name: Create dnsmasq.cong file
+    template: src=files/dnsmasq.conf.j2 dest=/etc/dnsmasq.conf 
+    notify:
+    - restart dnsmasq
+
+  - name: start dnsmasq service
+    service: name=dnsmasq state=started enabled=yes
+
+  - name: Allow Internet access to new VMs  through razor server [allow ip fowrading]
+    sysctl: name="net.ipv4.ip_forward" value=1 sysctl_set=yes state=present reload=yes
+
+  - name: Allow Internet access to new VMs  through razor server  [ Iptables]
+    iptables: chain=POSTROUTING comment=razor_nating  out_interface=eth0 table=nat jump=MASQUERADE 
+
+
+  - name: Save iptables rules to presist.
+    shell: /sbin/service iptables save
+
+
+  # - name: Download centos 6.7 iso 
+  #   get_url: url=http://centosmirror.go4hosting.in/centos/6.7/isos/x86_64/CentOS-6.7-x86_64-minimal.iso dest=/tmp/CentOS-6.7-x86_64-minimal.iso 
+
+  # - name: Create mount path 
+  #   file: path=/tmp/centos-6.7 state=directory 
+
+  # - name: Mount centos with loop
+  #   shell: mount -o loop /tmp/CentOS-6.7-x86_64-minimal.iso  /tmp/centos-6.7
+
+  # - name: copy with mount path 
+  #   shell: /bin/cp -rf /tmp/centos-6.7 /var/lib/razor/repo-store/ &&  chown  razor:razor -R /var/lib/razor/repo-store/ && umount  /tmp/centos-6.7
+
+  # - name: create 
+  handlers:
+  - name: restart dnsmasq
+    service: name=dnsmasq state=restarted
+
+  - name: restart razor-server
+    service: name=razor-server state=restarted
+
+  - name: restart postgres
+    service: name=postgresql-9.5  state=restarted
+    
+
+
+
+
+
+
+
+

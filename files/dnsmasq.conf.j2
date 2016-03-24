@@ -1,0 +1,14 @@
+# This works for dnsmasq 2.45
+# iPXE sets option 175, mark it for network IPXEBOOT
+dhcp-match=IPXEBOOT,175
+dhcp-boot=net:IPXEBOOT,bootstrap.ipxe
+dhcp-boot=undionly.kpxe
+# TFTP setup
+enable-tftp
+tftp-root=/var/lib/tftpboot
+#dhcp-range=192.168.2.50,192.168.2.150,12h
+dhcp-range={{ dhcp_range }}
+interface={{ interface }}
+no-dhcp-interface={{ no_dhcp_interface }}
+server={{ gateway }} 
+#server=192.168.2.8@eth1
