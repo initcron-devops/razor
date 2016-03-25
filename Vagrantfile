@@ -20,7 +20,7 @@ yum install git -y
 
 #Download razor-server repo from github 
 git clone https://github.com/initcron-abhijit/razor.git
-cd razor-server
+cd razor
 
 #Edit this to include your changes
 cat > vars.yml << FILE_END
