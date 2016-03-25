@@ -1,5 +1,0 @@
----
-dhcp_range: 192.168.2.50,192.168.2.150,12h
-interface: eth1
-no_dhcp_interface: eth0
-gateway: "{{ inventory_hostname }}@eth1"

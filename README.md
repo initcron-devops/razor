@@ -1,70 +1,31 @@
-# Setting up RAZOR server using ansible
+## RAZOR server setup using ansible
 
-## Install Ansible on OS X
-
-```
-
-  sudo easy_install pip
-  sudo pip install ansible
-	ansible --version
-
-[output]
-  ansible 2.0.1.0
-  config file = /path/to/ansible.cfg
-  configured module search path = Default w/o overrides
-
-```
-Edit Vagrantfile and vars.yml according your requirement. If not modified, the playbook will also work.
+Edit Vagrantfile according your requirement. If not modified, the playbook will also work.
 
 ### To create and config the infra.
 
-Run the vagrant-up.sh from command line.
+Run the **vagrant up** from command line.
 
 <pre>
-	./vagrant-up.sh
+	vagrant up 
 </pre>
 
-Once the play book is executed completely, run the following commands to setup razor server.
+This will download the centos-6.7 box from from github and will install **ansible** and run playbook on it.
 
-### Razor setup
+### Razor setup 
 
 To create repo, Log in to razor server created earlier and download the ISO file of the OS.
+ 
 
-
-E.g.
-
-<pre>
-	sudo su -
-	wget http://centosmirror.go4hosting.in/centos/6.7/isos/x86_64/CentOS-6.7-x86_64-minimal.iso
-	chown razor:razor  CentOS-6.7-x86_64-minimal.iso
- 	razor create-repo --name=centos6.7  --iso-url file:///root/CentOS-6.7-x86_64-minimal.iso --task centos
- 	wget http://releases.ubuntu.com/14.04/ubuntu-14.04.3-server-amd64.iso
- 	chown razor:razor ubuntu-14.04.3-server-amd64.iso
- 	razor create-repo --name=ubuntu-14.04 --iso-url file:///root/ubuntu-14.04.3-server-amd64.iso
-</pre>
-
-Now create a folder called **repo-mount** and mount iso file onto the  **repo-mount**.
+E.g. 
 
 <pre>
-	mount -o loop CentOS-6.7-x86_64-minimal.iso repo-mount
-</pre>
-
-create a folder with name same as the repo inside /var/lib/razor/repo-store/ and copy the contents of repo-mount into the directory.
-
-<pre>
-	mkdir /var/lib/razor/repo-store/centos-6.7/
-	cp -rf repo-mount/*  /var/lib/razor/repo-store/centos-6.7/
-</pre>
-
-Now unmount the centos iso and mount ubuntu ISO
-
-<pre>
-	umount repo-mount
-	mount -o loop ubuntu-14.04.3-server-amd64.iso repo-mount
-	mkdir /var/lib/razor/repo-store/ubuntu-14.04
-	cp -rf repo-mount/*  /var/lib/razor/repo-store/ubuntu-14.04
-	chown razor:razor -R /var/lib/razor/repo-store/
-	umount repo-mount
+	vagrant ssh
+	sudo su - razor
+	wget http://centosmirror.go4hosting.in/centos/6.7/isos/x86_64/CentOS-6.7-x86_64-minimal.iso 
+ 	razor create-repo --name=centos-6.7  --iso-url file:///var/lib/razor/CentOS-6.7-x86_64-minimal.iso --task centos 
+ 	wget http://releases.ubuntu.com/14.04/ubuntu-14.04.3-server-amd64.iso 
+ 	razor create-repo --name=ubuntu-14.04 --iso-url file:///var/lib/razor/ubuntu-14.04.3-server-amd64.iso --task ubuntu/trusty
 </pre>
 
 
@@ -111,7 +72,7 @@ To view tags
 
 To creata a policy that will load centos  for small VMs
 
-create a file with name **centos-small.json**" and contents
+create a file with name **centos-small.json**" and contents 
 
 <pre>
 
@@ -147,7 +108,7 @@ and file named **ubuntu-micro.json**
 }
 </pre>
 
-Now execute cmd
+Now execute cmd 
 
 <pre>
 
@@ -157,14 +118,14 @@ Now execute cmd
 
 </pre>
 
-To view polices
+To view polices 
 
-<pre>
+<pre> 
 	razor policies
 </pre>
 
 
-###To test the setup
+###To test the setup 
 
 
 create a VM in virtual box
@@ -178,9 +139,9 @@ create a VM in virtual box
 <img src="./screenshots/create-2.png">
 
 
-* Click **Continue**, then **Create**, then **Continue**, then **Continue**, then **Create**
+* Click **Continue**, then **Create**, then **Continue**, then **Continue**, then **Create** 
 
-  this will create you VM
+  this will create you VM 
 
 * Now modify the VM to allow network boot   
 
@@ -188,7 +149,7 @@ create a VM in virtual box
 
 <img src="./screenshots/modify-1.png" >
 
-* Now modify VM to get launched on the same net as razor server i.e private network
+* Now modify VM to get launched on the same net as razor server i.e private network 
 
   click on **Network** and do the changes as
 
@@ -206,7 +167,7 @@ create a VM in virtual box
 
 * Now you should see something like this.
 
-<img src="screenshots/netboot.png">
+<img src="screenshots/netboot.png"> 
 
   This verify that your VM is booting from Network.
   The GateWay IP in your case will will same as private network IP of razorserver in VagrantFile
@@ -222,3 +183,13 @@ create a VM in virtual box
 * Now razor will load the new OS on your VM depending on your policy.
 
 <img src="screenshots/newos.png">
+
+
+
+
+
+
+
+
+
+
