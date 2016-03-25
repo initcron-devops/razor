@@ -1,6 +1,6 @@
 ---
-- hosts: all
-  gather_facts: no
+- hosts: localhost
+  connection: local
   become: yes
   become_method: sudo
   become_user: root
@@ -56,7 +56,7 @@
     pause: minutes=1
 
   - name: verify whether razor-server is listning through API
-    shell: curl -L http://{{ inventory_hostname }}:8150/api 
+    shell: curl -L http://{{ ansible_eth1['ipv4']['address'] }}:8150/api 
     register: webpage
 
   - name: Chek if url is working correctly 
@@ -85,7 +85,7 @@
     get_url: url=http://boot.ipxe.org/undionly.kpxe dest=/var/lib/tftpboot/undionly.kpxe owner=razor group=razor mode=0744
 
   - name: Get bootstrap.ipxe file for TFTP
-    get_url: url=http://{{ inventory_hostname }}:8150/api/microkernel/bootstrap?nic_max=10  dest=/var/lib/tftpboot/bootstrap.ipxe owner=razor group=razor mode=0744
+    get_url: url=http://{{ ansible_eth1['ipv4']['address'] }}:8150/api/microkernel/bootstrap?nic_max=10  dest=/var/lib/tftpboot/bootstrap.ipxe owner=razor group=razor mode=0744
 
   - name: Create dnsmasq.cong file
     template: src=files/dnsmasq.conf.j2 dest=/etc/dnsmasq.conf 
